@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#F7FAF4">
+<title>القرآن الکریم | Quran with Urdu Tarjuma (Kanzul Iman)</title>
+<style>
+:root{--bg:#F7FAF4;--card:#EAF3EC;--ink:#1A5F8D;--ar:#0B2F47;--mut:#3E6477;--acc:#52AA88;--gold:#52AA88;--hl:#A3D0C0;--bd:#A3D0C0;--btn:#0B2F47;--fs:2rem}
+:root[data-theme="dark"]{--bg:#161B26;--card:#1F2735;--ink:#9FD0EA;--ar:#F2F6F4;--mut:#A9B8C4;--acc:#6FC2A1;--gold:#6FC2A1;--hl:#25445A;--bd:#34506A;--btn:#0B2F47}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Nastaliq Urdu","Segoe UI",system-ui,sans-serif;line-height:1.9}
+header{text-align:center;padding:18px 12px 6px}
+h1{margin:0;font-size:1.7rem;color:var(--ink);font-family:"Amiri","Traditional Arabic",serif}
+.sub{color:var(--mut);font-size:.85rem;font-family:system-ui,sans-serif}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:10px;border-bottom:1px solid var(--bd);font-family:system-ui,sans-serif}
+button{background:var(--acc);color:var(--btn);font-weight:600;border:0;border-radius:999px;padding:8px 14px;font-size:.9rem;cursor:pointer}
+button.alt{background:transparent;color:var(--ink);border:1px solid var(--acc)}
+input,select{padding:8px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--ink);font-size:.95rem}
+main{max-width:780px;margin:0 auto;padding:12px}
+#home .s{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin:8px 0;cursor:pointer}
+#home .s:hover{border-color:var(--acc)}
+.n{border:1px solid var(--gold);color:var(--ink);border-radius:50%;min-width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;font-size:.85rem}
+.s .m{flex:1;font-family:system-ui,sans-serif}
+.s .m small{color:var(--mut);display:block}
+.s .a{font-family:"Amiri","Traditional Arabic",serif;font-size:1.4rem;color:var(--ink)}
+.bis{color:var(--ar);text-align:center;font-family:"Amiri","Traditional Arabic",serif;font-size:1.8rem;margin:10px 0 14px}
+.v{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 16px;margin:10px 0}
+.v.on{background:var(--hl);border-color:var(--acc)}
+.top{display:flex;justify-content:space-between;align-items:center}
+.ar{color:var(--ar);direction:rtl;text-align:right;font-family:"Amiri","Scheherazade New","Traditional Arabic",serif;font-size:var(--fs);line-height:2.2;margin:6px 0}
+.ur{direction:rtl;text-align:right;font-size:1.05rem}
+.hide .ur{display:none}
+.msg{text-align:center;color:var(--mut);padding:30px;font-family:system-ui,sans-serif}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+<h1>القرآن الکریم</h1>
+<div class="sub">114 Surahs · Urdu Tarjuma: Kanzul Iman (as in Sirat-ul-Jinan, Dawat-e-Islami) · Audio: Mishary Alafasy</div>
+</header>
+<div class="bar">
+<button id="theme" class="alt" title="Dark / Light">🌙</button>
+<button id="back" class="alt" hidden>← Fehrist</button>
+<input id="q" placeholder="Surah dhoondein / Search…">
+<span id="ctl" hidden>
+<button id="playAll">▶ Play All</button>
+<button id="stop" class="alt">■ Stop</button>
+<button id="tr" class="alt">ترجمہ</button>
+<button id="fs" class="alt">A+</button>
+</span>
+</div>
+<main>
+<div id="home"><div class="msg">Loading…</div></div>
+<div id="read" hidden></div>
+</main>
+<script>
+const API='https://api.alquran.cloud/v1/';
+const $=id=>document.getElementById(id);
+const home=$('home'),read=$('read'),au=new Audio();
+let surahs=[],run=false,cur=-1,fs=2;
+const BIS='بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ';
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+async function j(u){const r=await fetch(u);if(!r.ok)throw 0;return (await r.json()).data}
+function err(el){el.innerHTML='<div class="msg">⚠ Internet ya server ka masla. Dobara koshish karein.<br><br><button onclick="location.reload()">Reload</button></div>'}
+function list(f=''){
+const t=f.trim().toLowerCase();
+home.innerHTML=surahs.filter(s=>!t||(s.englishName+s.name+s.number+s.englishNameTranslation).toLowerCase().includes(t)).map(s=>
+`<div class="s" data-n="${s.number}"><span class="n">${s.number}</span><div class="m">${s.englishName}<small>${s.englishNameTranslation} · ${s.numberOfAyahs} ayat · ${s.revelationType}</small></div><span class="a">${s.name.replace('سُورَةُ ','')}</span></div>`).join('')||'<div class="msg">Koi surah nahi mili</div>'}
+async function init(){
+try{surahs=await j(API+'surah');list();
+const h=+location.hash.slice(1)||0;if(h>=1&&h<=114)open(h)}catch(e){err(home)}}
+home.onclick=e=>{const s=e.target.closest('.s');if(s)open(+s.dataset.n)};
+$('q').oninput=e=>{if(!home.hidden)list(e.target.value)};
+async function open(n){
+stop();home.hidden=true;read.hidden=false;$('back').hidden=false;$('ctl').hidden=false;$('q').hidden=true;
+read.innerHTML='<div class="msg">Loading…</div>';location.hash=n;scrollTo(0,0);
+try{
+let d;try{d=await j(API+`surah/${n}/editions/quran-uthmani,ur.kanzuliman,ar.alafasy`)}catch(e){d=await j(API+`surah/${n}/editions/quran-uthmani,ur.jalandhry,ar.alafasy`)}
+const [a,u,v]=d,s=a;
+const strip=t=>(n!==1&&n!==9)?t.split(' ').slice(4).join(' '):t;
+let h=`<div class="bis" style="font-size:1.6rem;color:var(--ink)">${s.name}</div><div class="msg" style="padding:0 0 10px">${s.englishName} — ${s.englishNameTranslation} · ${s.numberOfAyahs} ayat</div>`;
+if(n!==1&&n!==9)h+=`<div class="bis">${BIS}</div>`;
+h+=a.ayahs.map((x,i)=>`<div class="v" id="v${i}" data-i="${i}" data-a="${v.ayahs[i].audio}"><div class="top"><span class="n">${x.numberInSurah}</span><button class="alt" data-p="${i}">🔊 سنیں</button></div><div class="ar">${i===0?strip(x.text):x.text}</div><div class="ur">${u.ayahs[i].text}</div></div>`).join('');
+if(n<114)h+=`<div style="text-align:center;margin:20px"><button data-next="${n+1}">اگلی سورۃ →</button></div>`;
+read.innerHTML=h;read.dataset.n=n;store.set('last',n)
+}catch(e){err(read)}}
+function mark(i){document.querySelectorAll('.v.on').forEach(e=>e.classList.remove('on'));const e=$('v'+i);if(e){e.classList.add('on');e.scrollIntoView({behavior:'smooth',block:'center'})}}
+function play(i){const e=$('v'+i);if(!e){stop();return}cur=i;mark(i);au.src=e.dataset.a;au.play().catch(()=>{})}
+au.onended=()=>{if(run)play(cur+1);else mark(-1)};
+function stop(){run=false;au.pause();mark(-1)}
+read.onclick=e=>{const p=e.target.closest('[data-p]'),nx=e.target.closest('[data-next]');
+if(p){run=false;play(+p.dataset.p)}
+if(nx)open(+nx.dataset.next)};
+$('playAll').onclick=()=>{run=true;play(cur>=0?cur:0)};
+$('stop').onclick=stop;
+$('tr').onclick=()=>read.classList.toggle('hide');
+$('fs').onclick=()=>{fs=fs>=3?1.6:fs+.4;document.documentElement.style.setProperty('--fs',fs+'rem')};
+$('back').onclick=()=>{stop();read.hidden=true;home.hidden=false;$('back').hidden=true;$('ctl').hidden=true;$('q').hidden=false;history.replaceState(null,'',location.pathname)};
+function setTheme(t){document.documentElement.dataset.theme=t;$('theme').textContent=t==='dark'?'☀️':'🌙';store.set('theme',t)}
+setTheme(store.get('theme')||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+$('theme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+init();
+</script>
+</body>
+</html>
